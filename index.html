@@ -121,18 +121,15 @@
                 let possibleTimes = [];
                 let currentTime = new Date(startTime);
 
-                // **确保 currentTime 对齐到 `xx:00` 或 `xx:30`**
-                let startMinutes = currentTime.getMinutes();
-                if (startMinutes % 30 !== 0) {
-                    currentTime.setMinutes(startMinutes - (startMinutes % 30) + (startMinutes % 30 >= 15 ? 30 : 0));
-                }
-
                 while (currentTime <= targetTime) {
                     let h = currentTime.getHours();
                     let m = currentTime.getMinutes();
-                    let formattedTime = `${String(h).padStart(2, "0")}:${m === 0 ? "00" : "30"}`;
-                    possibleTimes.push(formattedTime);
-                    currentTime.setMinutes(currentTime.getMinutes() + 30);
+                    // 只允许 `xx:00` 或 `xx:30`
+                    if (m === 0 || m === 30) {
+                        let formattedTime = `${String(h).padStart(2, "0")}:${m === 0 ? "00" : "30"}`;
+                        possibleTimes.push(formattedTime);
+                    }
+                    currentTime.setMinutes(currentTime.getMinutes() + 1); // **不取整，每分钟增加**
                 }
 
                 allRanges.push(possibleTimes);

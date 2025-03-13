@@ -30,51 +30,22 @@
         select, input {
             padding: 8px;
             font-size: 18px;
-            font-family: Arial;  /* 统一时间显示字体，保证对齐 */
+            font-family: Arial;
         }
-        .add-btn {
-            margin-top: 10px;
+        .add-btn, .calculate-btn, .remove-btn {
             padding: 10px;
             font-size: 16px;
-            background: #28a745; /* 绿色 */
-            color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
-        .add-btn:hover {
-            background: #218838;
-        }
-        .remove-btn {
-            padding: 8px;
-            font-size: 14px;
-            background: #dc3545; /* 红色 */
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .remove-btn:hover {
-            background: #c82333;
-        }
-        .calculate-btn {
-            margin-top: 10px;
-            padding: 10px;
-            font-size: 16px;
-            background: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .calculate-btn:hover {
-            background: #0056b3;
-        }
-        #results {
-            margin-top: 20px;
-            font-size: 18px;
-            text-align: left;
-        }
+        .add-btn { background: #28a745; color: white; }
+        .add-btn:hover { background: #218838; }
+        .remove-btn { background: #dc3545; color: white; font-size: 14px; padding: 8px; }
+        .remove-btn:hover { background: #c82333; }
+        .calculate-btn { background: #007BFF; color: white; }
+        .calculate-btn:hover { background: #0056b3; }
+        #results { margin-top: 20px; font-size: 18px; text-align: left; }
         .result-box {
             background: #fff;
             padding: 10px;
@@ -138,33 +109,33 @@
                 if (!timeStr) return;
 
                 let [hours, minutes] = timeStr.split(":").map(Number);
-                let totalMinutes = (day === "yesterday" ? -24 * 60 : 0) + hours * 60 + minutes;
+                let now = new Date();
+                let targetTime = new Date();
+                targetTime.setHours(hours, minutes, 0, 0);
+                if (day === "yesterday") {
+                    targetTime.setDate(targetTime.getDate() - 1);
+                }
 
-                // **1. 计算 start_time（严格减去 3 小时）**
-                let startMinutes = totalMinutes - 180;
-
-                // **2. 生成可选时间，只筛选 `xx:00` 或 `xx:30`**
+                // **计算 3 小时前的时间**
+                let startTime = new Date(targetTime.getTime() - 3 * 60 * 60 * 1000);
                 let possibleTimes = [];
-                let m = startMinutes;
-                
-                // **确保 m 对齐到 `xx:00` 或 `xx:30`**
-                if (m % 30 !== 0) {
-                    m -= (m % 30);  // 让 m 先对齐到 `xx:00`
+                let currentTime = new Date(startTime);
+
+                // **确保 currentTime 对齐到 `xx:00` 或 `xx:30`**
+                let startMinutes = currentTime.getMinutes();
+                if (startMinutes % 30 !== 0) {
+                    currentTime.setMinutes(startMinutes - (startMinutes % 30) + (startMinutes % 30 >= 15 ? 30 : 0));
                 }
 
-                for (; m <= totalMinutes; m += 30) {
-                    let h = Math.floor(m / 60);
-                    let min = m % 60;
-                    let formattedTime = `${(h + 24) % 24}:${min === 0 ? "00" : "30"}`;
+                while (currentTime <= targetTime) {
+                    let h = currentTime.getHours();
+                    let m = currentTime.getMinutes();
+                    let formattedTime = `${String(h).padStart(2, "0")}:${m === 0 ? "00" : "30"}`;
                     possibleTimes.push(formattedTime);
+                    currentTime.setMinutes(currentTime.getMinutes() + 30);
                 }
-
-                // **去重，确保不会重复**
-                possibleTimes = [...new Set(possibleTimes)];
 
                 allRanges.push(possibleTimes);
-
-                // **显示当前时间的可选时间**
                 let timeLabel = day === "today" ? "今天" : "昨天";
                 let displayTime = `${timeLabel} ${timeStr}`;
                 resultsDiv.innerHTML += `
@@ -175,10 +146,10 @@
                 `;
             });
 
-            // **3. 计算交集**
+            // **计算交集**
             let intersection = allRanges.reduce((a, b) => a.filter(time => b.includes(time)), allRanges[0] || []);
 
-            // **4. 输出交集**
+            // **输出交集**
             resultsDiv.innerHTML += `
                 <div class="result-box">
                     <strong>可选时间交集：</strong> 
